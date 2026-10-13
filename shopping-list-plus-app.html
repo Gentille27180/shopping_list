@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Shopping List+</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: #172238;
+      background: #f5f7fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --blue: #365cf5;
+      --blue-dark: #2142d1;
+      --muted: #718096;
+      --line: #e7ebf2;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { width: min(100% - 32px, 620px); margin: 0 auto; padding: 34px 0 56px; }
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+    .eyebrow { margin: 0 0 6px; color: var(--blue); font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.45rem); letter-spacing: -.05em; }
+    .subtitle { margin: 8px 0 24px; color: var(--muted); }
+    .card { border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 12px 36px #24334d0b; }
+    .add-card { padding: 18px; }
+    .add-form { display: flex; gap: 10px; }
+    .add-form input, .field input, .field textarea {
+      width: 100%; border: 1px solid #dce2ec; border-radius: 12px; padding: 13px 14px;
+      color: inherit; background: #fff; outline: none;
+    }
+    .add-form input:focus, .field input:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #365cf51c; }
+    .primary { border: 0; border-radius: 12px; padding: 0 19px; color: white; background: var(--blue); font-weight: 750; }
+    .primary:hover { background: var(--blue-dark); }
+    .filters { display: flex; gap: 8px; margin: 18px 0; }
+    .filter, .category-choice {
+      border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px;
+      color: #59677c; background: #fff; font-weight: 700;
+    }
+    .filter[aria-pressed="true"], .category-choice[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); background: #edf1ff; }
+    .list-card { overflow: hidden; }
+    .list-heading { display: flex; justify-content: space-between; align-items: center; padding: 17px 18px; border-bottom: 1px solid var(--line); }
+    .list-heading h2 { margin: 0; font-size: 1rem; }
+    .count { color: var(--muted); font-size: .88rem; }
+    .items { list-style: none; margin: 0; padding: 0; }
+    .item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f0f2f6; }
+    .item:last-child { border-bottom: 0; }
+    .item-main { display: flex; align-items: center; flex: 1; min-width: 0; gap: 12px; }
+    .bought-toggle { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--blue); }
+    .item-copy { flex: 1; min-width: 0; }
+    .item-name { overflow-wrap: anywhere; font-weight: 750; }
+    .item.bought .item-name { color: #8c96a7; text-decoration: line-through; }
+    .item-meta { margin-top: 3px; overflow-wrap: anywhere; color: var(--muted); font-size: .82rem; }
+    .item-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; flex: 0 0 auto; }
+    .icon-button, .quantity-button, .back-button {
+      display: inline-grid; place-items: center; min-width: 34px; height: 34px;
+      border: 1px solid var(--line); border-radius: 10px; color: #46546a; background: #fff;
+    }
+    .quantity { min-width: 22px; text-align: center; font-weight: 750; }
+    .icon-button:hover, .quantity-button:hover, .back-button:hover { border-color: #bbc7da; background: #f7f8fc; }
+    .delete-button { color: #c04451; }
+    .details-button { width: auto; padding: 0 9px; font-size: .82rem; }
+    .empty { padding: 36px 18px; color: var(--muted); text-align: center; }
+    .empty strong { display: block; margin-bottom: 5px; color: #29364b; font-size: 1.02rem; }
+    .hint { margin: 13px 4px 0; color: var(--muted); font-size: .82rem; text-align: center; }
+    .notice { position: fixed; z-index: 3; right: 16px; bottom: 18px; left: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: min(100% - 32px, 560px); margin: auto; padding: 12px 14px; border-radius: 14px; color: #fff; background: #202b40; box-shadow: 0 12px 34px #14203435; }
+    .notice[hidden] { display: none; }
+    .undo-button { border: 0; padding: 8px 10px; border-radius: 9px; color: #fff; background: #465cf4; font-weight: 800; }
+    .details-screen { position: fixed; z-index: 2; inset: 0; overflow-y: auto; background: #f5f7fb; }
+    .details-content { width: min(100% - 32px, 560px); margin: 0 auto; padding: 26px 0 48px; }
+    .details-header { display: flex; align-items: center; gap: 14px; margin: 2px 0 22px; }
+    .details-header h2 { margin: 0; font-size: 1.35rem; }
+    .details-card { padding: 20px; }
+    .field { display: block; margin-bottom: 19px; }
+    .field > span, .category-label { display: block; margin-bottom: 8px; color: #44516a; font-size: .9rem; font-weight: 750; }
+    .field textarea { min-height: 92px; resize: vertical; }
+    .category-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+    .save-button { width: 100%; min-height: 48px; }
+    .form-error { min-height: 1.25em; margin: -7px 0 12px; color: #b42332; font-size: .9rem; }
+    .storage-note { margin: 20px 4px 0; color: var(--muted); font-size: .8rem; text-align: center; }
+    @media (max-width: 430px) {
+      .app { padding-top: 24px; }
+      .add-card { padding: 14px; }
+      .add-form { gap: 7px; }
+      .primary { padding: 0 14px; }
+      .item { gap: 8px; padding: 12px 10px; }
+      .item-main { gap: 8px; }
+      .item-actions { gap: 3px; }
+      .icon-button, .quantity-button { min-width: 31px; height: 32px; }
+      .details-button { display: none; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .item { animation: arrive .18s ease-out; }
+      @keyframes arrive { from { opacity: .55; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="listScreen">
+    <header>
+      <div class="topline">
+        <div>
+          <p class="eyebrow">Your next shop, made easier</p>
+          <h1>Shopping List<span style="color:var(--blue)">+</span></h1>
+        </div>
+      </div>
+      <p class="subtitle">Add what you need. Tap to mark it bought.</p>
+    </header>
+
+    <section class="card add-card" aria-label="Add an item">
+      <form class="add-form" id="addForm">
+        <input id="newItemName" name="item" maxlength="80" placeholder="What do you need?" aria-label="New item name" autocomplete="off" required>
+        <button class="primary" type="submit">Add item</button>
+      </form>
+    </section>
+
+    <nav class="filters" aria-label="Filter items">
+      <button class="filter" type="button" data-filter="All" aria-pressed="true">All</button>
+      <button class="filter" type="button" data-filter="To buy" aria-pressed="false">To buy</button>
+      <button class="filter" type="button" data-filter="Bought" aria-pressed="false">Bought</button>
+    </nav>
+
+    <section class="card list-card" aria-label="Shopping items">
+      <div class="list-heading">
+        <h2 id="listTitle">Your items</h2>
+        <span class="count" id="itemCount"></span>
+      </div>
+      <ul class="items" id="items"></ul>
+      <div class="empty" id="emptyMessage" hidden></div>
+    </section>
+    <p class="hint">Tip: press and hold an item to open its details.</p>
+    <p class="storage-note">Your list is saved in this browser on this device.</p>
+  </main>
+
+  <section class="details-screen" id="detailsScreen" aria-labelledby="detailsTitle" hidden>
+    <div class="details-content">
+      <header class="details-header">
+        <button class="back-button" id="backButton" type="button" aria-label="Back to shopping list">←</button>
+        <h2 id="detailsTitle">Item details</h2>
+      </header>
+      <form class="card details-card" id="detailsForm" novalidate>
+        <label class="field">
+          <span>Item name</span>
+          <input id="detailName" maxlength="80" required>
+        </label>
+        <label class="field">
+          <span>Note</span>
+          <textarea id="detailNote" maxlength="240" placeholder="For example: the 1 litre bottle"></textarea>
+        </label>
+        <div class="category-label">Category</div>
+        <div class="category-options" role="group" aria-label="Choose a category">
+          <button class="category-choice" type="button" data-category="Food" aria-pressed="true">Food</button>
+          <button class="category-choice" type="button" data-category="Drinks" aria-pressed="false">Drinks</button>
+          <button class="category-choice" type="button" data-category="Home" aria-pressed="false">Home</button>
+        </div>
+        <p class="form-error" id="detailError" role="alert"></p>
+        <button class="primary save-button" type="submit">Save changes</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="notice" id="notice" role="status" aria-live="polite" hidden>
+    <span id="noticeText"></span>
+    <button class="undo-button" id="undoButton" type="button" hidden>Undo</button>
+  </div>
+
+  <script>
+    (() => {
+      const storageKey = "shopping-list-plus-v1";
+      const starterItems = [
+        { id: makeId(), name: "Milk", quantity: 1, bought: false, note: "", category: "Drinks" },
+        { id: makeId(), name: "Bread", quantity: 1, bought: false, note: "", category: "Food" },
+        { id: makeId(), name: "Rice", quantity: 1, bought: false, note: "", category: "Food" }
+      ];
+      const state = { items: loadItems(), filter: "All", noticeTimer: null, detailId: null, draftCategory: "Food", pressTimer: null };
+      const itemList = document.getElementById("items");
+      const emptyMessage = document.getElementById("emptyMessage");
+      const itemCount = document.getElementById("itemCount");
+      const listTitle = document.getElementById("listTitle");
+      const notice = document.getElementById("notice");
+      const noticeText = document.getElementById("noticeText");
+      const undoButton = document.getElementById("undoButton");
+      const detailsScreen = document.getElementById("detailsScreen");
+      const detailName = document.getElementById("detailName");
+      const detailNote = document.getElementById("detailNote");
+      const detailError = document.getElementById("detailError");
+
+      function makeId() {
+        return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function loadItems() {
+        try {
+          const saved = localStorage.getItem(storageKey);
+          if (saved === null) return starterItems;
+          const parsed = JSON.parse(saved);
+          if (!Array.isArray(parsed)) throw new Error("Saved shopping list is not a list.");
+          return parsed
+            .filter(item => item && typeof item.id === "string" && typeof item.name === "string")
+            .map(item => ({
+              id: item.id,
+              name: item.name,
+              quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
+              bought: item.bought === true,
+              note: typeof item.note === "string" ? item.note : "",
+              category: ["Food", "Drinks", "Home"].includes(item.category) ? item.category : "Food"
+            }));
+        } catch (error) {
+          console.error("Could not load the saved shopping list.", error);
+          return starterItems;
+        }
+      }
+
+      function saveItems() {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state.items));
+        } catch (error) {
+          console.error("Could not save the shopping list.", error);
+          showNotice("Couldn't save changes in this browser.");
+        }
+      }
+
+      function normalise(name) {
+        return name.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+      }
+
+      function hideNotice() {
+        clearTimeout(state.noticeTimer);
+        notice.hidden = true;
+        undoButton.hidden = true;
+        undoButton.onclick = null;
+      }
+
+      function showNotice(message, undo) {
+        clearTimeout(state.noticeTimer);
+        noticeText.textContent = message;
+        undoButton.hidden = !undo;
+        undoButton.onclick = undo ?? null;
+        notice.hidden = false;
+        state.noticeTimer = setTimeout(hideNotice, undo ? 6000 : 3200);
+      }
+
+      function visibleItems() {
+        if (state.filter === "To buy") return state.items.filter(item => !item.bought);
+        if (state.filter === "Bought") return state.items.filter(item => item.bought);
+        return [
+          ...state.items.filter(item => !item.bought),
+          ...state.items.filter(item => item.bought)
+        ];
+      }
+
+      function createButton(label, className, action, title) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = className;
+        button.textContent = label;
+        button.setAttribute("aria-label", title);
+        button.title = title;
+        button.addEventListener("click", action);
+        return button;
+      }
+
+      function changeQuantity(item, amount) {
+        const next = item.quantity + amount;
+        if (next < 1) return;
+        item.quantity = next;
+        saveItems();
+        render();
+      }
+
+      function changeBought(item) {
+        item.bought = !item.bought;
+        saveItems();
+        render();
+      }
+
+      function deleteItem(item) {
+        hideNotice();
+        const originalIndex = state.items.findIndex(entry => entry.id === item.id);
+        if (originalIndex < 0) return;
+        state.items.splice(originalIndex, 1);
+        saveItems();
+        render();
+        showNotice(`${item.name} removed`, () => {
+          state.items.splice(Math.min(originalIndex, state.items.length), 0, item);
+          saveItems();
+          render();
+          hideNotice();
+        });
+      }
+
+      function openDetails(item) {
+        clearTimeout(state.pressTimer);
+        state.detailId = item.id;
+        state.draftCategory = item.category;
+        detailName.value = item.name;
+        detailNote.value = item.note;
+        detailError.textContent = "";
+        document.querySelectorAll(".category-choice").forEach(button => {
+          button.setAttribute("aria-pressed", String(button.dataset.category === state.draftCategory));
+        });
+        detailsScreen.hidden = false;
+        detailsScreen.scrollTop = 0;
+        detailName.focus();
+      }
+
+      function closeDetails() {
+        detailsScreen.hidden = true;
+        state.detailId = null;
+        render();
+        document.getElementById("newItemName").focus();
+      }
+
+      function render() {
+        itemList.replaceChildren();
+        const shown = visibleItems();
+        const remaining = state.items.filter(item => !item.bought).length;
+        itemCount.textContent = `${remaining} to buy · ${state.items.length} total`;
+        listTitle.textContent = state.filter === "All" ? "Your items" : state.filter;
+
+        if (state.items.length === 0) {
+          emptyMessage.innerHTML = "<strong>Your list is empty</strong>Add an item above to get started.";
+          emptyMessage.hidden = false;
+          return;
+        }
+        if (shown.length === 0) {
+          emptyMessage.innerHTML = "<strong>Nothing here</strong>Try another filter or add an item.";
+          emptyMessage.hidden = false;
+          return;
+        }
+        emptyMessage.hidden = true;
+
+        for (const item of shown) {
+          const row = document.createElement("li");
+          row.className = `item${item.bought ? " bought" : ""}`;
+          row.dataset.itemId = item.id;
+
+          const main = document.createElement("div");
+          main.className = "item-main";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.className = "bought-toggle";
+          checkbox.checked = item.bought;
+          checkbox.setAttribute("aria-label", `Mark ${item.name} ${item.bought ? "to buy" : "bought"}`);
+          checkbox.addEventListener("change", () => changeBought(item));
+
+          const copy = document.createElement("div");
+          copy.className = "item-copy";
+          const name = document.createElement("div");
+          name.className = "item-name";
+          name.textContent = item.name;
+          const meta = document.createElement("div");
+          meta.className = "item-meta";
+          meta.textContent = `${item.category}${item.note ? ` · ${item.note}` : ""}`;
+          copy.append(name, meta);
+          main.append(checkbox, copy);
+
+          const actions = document.createElement("div");
+          actions.className = "item-actions";
+          actions.append(
+            createButton("−", "quantity-button", () => changeQuantity(item, -1), `Reduce ${item.name} quantity`),
+            Object.assign(document.createElement("span"), { className: "quantity", textContent: String(item.quantity) }),
+            createButton("+", "quantity-button", () => changeQuantity(item, 1), `Increase ${item.name} quantity`),
+            createButton("Details", "icon-button details-button", () => openDetails(item), `Edit ${item.name} details`),
+            createButton("×", "icon-button delete-button", () => deleteItem(item), `Remove ${item.name}`)
+          );
+          row.append(main, actions);
+          row.addEventListener("pointerdown", event => {
+            if (event.target.closest("button, input")) return;
+            clearTimeout(state.pressTimer);
+            state.pressTimer = setTimeout(() => openDetails(item), 550);
+          });
+          for (const eventName of ["pointerup", "pointerleave", "pointercancel"]) {
+            row.addEventListener(eventName, () => clearTimeout(state.pressTimer));
+          }
+          itemList.append(row);
+        }
+      }
+
+      document.getElementById("addForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const input = document.getElementById("newItemName");
+        const name = input.value.trim().replace(/\s+/g, " ");
+        if (!name) {
+          input.focus();
+          return;
+        }
+        hideNotice();
+        const match = state.items.find(item => normalise(item.name) === normalise(name));
+        if (match) {
+          match.quantity += 1;
+          saveItems();
+          render();
+          showNotice(`${match.name} is already on the list: now ×${match.quantity}`);
+        } else {
+          state.items.push({ id: makeId(), name, quantity: 1, bought: false, note: "", category: "Food" });
+          saveItems();
+          render();
+          showNotice(`${name} added`);
+        }
+        input.value = "";
+        input.focus();
+      });
+
+      document.querySelectorAll(".filter").forEach(button => {
+        button.addEventListener("click", () => {
+          state.filter = button.dataset.filter;
+          document.querySelectorAll(".filter").forEach(filterButton => {
+            filterButton.setAttribute("aria-pressed", String(filterButton === button));
+          });
+          render();
+        });
+      });
+
+      document.querySelectorAll(".category-choice").forEach(button => {
+        button.addEventListener("click", () => {
+          state.draftCategory = button.dataset.category;
+          document.querySelectorAll(".category-choice").forEach(categoryButton => {
+            categoryButton.setAttribute("aria-pressed", String(categoryButton === button));
+          });
+        });
+      });
+
+      document.getElementById("detailsForm").addEventListener("submit", event => {
+        event.preventDefault();
+        const name = detailName.value.trim().replace(/\s+/g, " ");
+        if (!name) {
+          detailError.textContent = "Please enter an item name before saving.";
+          detailName.focus();
+          return;
+        }
+        const item = state.items.find(entry => entry.id === state.detailId);
+        if (!item) {
+          detailError.textContent = "This item is no longer on your list.";
+          return;
+        }
+        const duplicate = state.items.some(entry => entry.id !== item.id && normalise(entry.name) === normalise(name));
+        if (duplicate) {
+          detailError.textContent = "Another item already has that name. Choose a different name.";
+          detailName.focus();
+          return;
+        }
+        item.name = name;
+        item.note = detailNote.value.trim();
+        item.category = state.draftCategory;
+        saveItems();
+        closeDetails();
+        showNotice("Item details saved");
+      });
+
+      document.getElementById("backButton").addEventListener("click", closeDetails);
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !detailsScreen.hidden) closeDetails();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
